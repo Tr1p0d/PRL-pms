@@ -8,8 +8,11 @@
 
 #define TAG 0
 #define SIZE 1
+#define DONE -1
 
 using namespace std;
+
+int done = -1;
 
 int toggleQueue(int, int);
 int main(int argc, char** argv) {
@@ -39,42 +42,62 @@ int main(int argc, char** argv) {
       number= fin.get();
       if(!fin.good()) break;                      //nacte i eof, takze vyskocim
       cout<<number<<" ";                          //kdo dostane kere cislo
-	  nextQueueNumber = toggleQueue(1, counter++);
-	  MPI_Send(&nextQueueNumber, SIZE, MPI_INT, neighRank, TAG, MPI_COMM_WORLD);  //buffer,velikost,typ,rank prijemce,tag,komunikacni skupina 
-	  MPI_Send(&number, SIZE, MPI_INT, neighRank, TAG, MPI_COMM_WORLD);  //buffer,velikost,typ,rank prijemce,tag,komunikacni skupina 
+	nextQueueNumber = toggleQueue(1, counter++);
+        //buffer,velikost,typ,rank prijemce,tag,komunikacni skupina 
+	MPI_Send(&nextQueueNumber, SIZE, MPI_INT, neighRank, TAG, MPI_COMM_WORLD);  	  
+        //buffer,velikost,typ,rank prijemce,tag,komunikacni skupina 
+        MPI_Send(&number, SIZE, MPI_INT, neighRank, TAG, MPI_COMM_WORLD);      
     }//while
-	cout<<endl;
+
+    //cout<<endl<<"process : 0 DONE"<<endl;
     fin.close(); 
+    MPI_Send(&done, SIZE, MPI_INT, neighRank, TAG, MPI_COMM_WORLD);  
   }
 
   if(myRank == 1) {
     int queueNumber;
-	int number;
-	int maxIndex;
-	int nextQueueNumber;
-	int counter = 0;
+    int number;
+    int maxIndex;
+    int nextQueueNumber;
+    int counter = 0;
 
-	vector< queue<int>* > qv;
+    vector< queue<int>* > qv;
     qv.push_back(new queue<int> );
     qv.push_back(new queue<int> );
 
     while(1) {
-      MPI_Recv(&queueNumber, SIZE, MPI_INT, 0, TAG, MPI_COMM_WORLD, &stat); //buffer,velikost,typ,rank odesilatele,tag, skupina, stat
-      MPI_Recv(&number, SIZE, MPI_INT, 0, TAG, MPI_COMM_WORLD, &stat); //buffer,velikost,typ,rank odesilatele,tag, skupina, stat
-	  qv[queueNumber]->push(number);
+      while ( !qv[0]->empty() && !qv[1]->empty() ) {
+	maxIndex = (qv[0]->front() > qv[1]->front() ? 0 : 1);
+	nextQueueNumber = toggleQueue(2, counter++);
+        //buffer,velikost,typ,rank prijemce,tag,komunikacni skupina 
+	MPI_Send(&nextQueueNumber, SIZE, MPI_INT, neighRank, TAG, MPI_COMM_WORLD);  
+        //buffer,velikost,typ,rank prijemce,tag,komunikacni skupina 
+	MPI_Send(&qv[maxIndex]->front(), SIZE, MPI_INT, neighRank, TAG, MPI_COMM_WORLD);  
 
-	  cout<<"process : "<<myRank<<" queue : "<<queueNumber<<" number : "<<number<<endl;
-	  if ( !qv[0]->empty() && !qv[1]->empty() ) {
-		maxIndex = (qv[0]->front() > qv[1]->front() ? 0 : 1);
-		nextQueueNumber = toggleQueue(2, counter++);
+	//cout<<"process : "<<myRank<<" sent : "<<qv[maxIndex]->front()<<endl;
+	qv[maxIndex]->pop();
+      } 
 
-	    MPI_Send(&nextQueueNumber, SIZE, MPI_INT, neighRank, TAG, MPI_COMM_WORLD);  //buffer,velikost,typ,rank prijemce,tag,komunikacni skupina 
-	    MPI_Send(&qv[maxIndex]->front(), SIZE, MPI_INT, neighRank, TAG, MPI_COMM_WORLD);  //buffer,velikost,typ,rank prijemce,tag,komunikacni skupina 
+      //buffer,velikost,typ,rank odesilatele,tag, skupina, stat
+      MPI_Recv(&queueNumber, SIZE, MPI_INT, 0, TAG, MPI_COMM_WORLD, &stat); 
+      if( queueNumber == -1 ) {
+	maxIndex = (qv[0]->empty() ? 1 : 0);
+	nextQueueNumber = toggleQueue(2, counter++);
+	MPI_Send(&nextQueueNumber, SIZE, MPI_INT, neighRank, TAG, MPI_COMM_WORLD);  
+	MPI_Send(&qv[maxIndex]->front(), SIZE, MPI_INT, neighRank, TAG, MPI_COMM_WORLD);  
 
-	    cout<<"process : "<<myRank<<" sent : "<<qv[maxIndex]->front()<<endl;
-		qv[maxIndex]->pop();
-	  }
-	}
+	//cout<<"process : "<<myRank<<" sent : "<<qv[maxIndex]->front()<<endl;
+	MPI_Send(&done, SIZE, MPI_INT, neighRank, TAG, MPI_COMM_WORLD);  
+	//cout<<"process : "<<myRank<<" DONE "<<endl;
+	qv[maxIndex]->pop();
+      }
+      //buffer,velikost,typ,rank odesilatele,tag, skupina, stat
+      MPI_Recv(&number, SIZE, MPI_INT, 0, TAG, MPI_COMM_WORLD, &stat); 
+      qv[queueNumber]->push(number);
+
+      //cout<<"process : "<<myRank<<" queue : "<<queueNumber<<" number : "<<number<<endl;
+	  
+    } // while
   }
 
   if(myRank == 2) {
@@ -87,22 +110,22 @@ int main(int argc, char** argv) {
     qv.push_back(new queue<int> );
 
     while(1) {
-      MPI_Recv(&queueNumber, SIZE, MPI_INT, myRank-1, TAG, MPI_COMM_WORLD, &stat); //buffer,velikost,typ,rank odesilatele,tag, skupina, stat
-      MPI_Recv(&number, SIZE, MPI_INT, myRank-1, TAG, MPI_COMM_WORLD, &stat); //buffer,velikost,typ,rank odesilatele,tag, skupina, stat
-	  qv[queueNumber]->push(number);
-
-	  cout<<"process : "<<myRank<<" queue : "<<queueNumber<<" number : "<<number<<endl;
-	  if ( !qv[0]->empty() && !qv[1]->empty() ) {
-		maxIndex = (qv[0]->front() > qv[1]->front() ? 0 : 1);
-		//nextQueueNumber = toggleQueue(4, counter++);
-
-	    //MPI_Send(&nextQueueNumber, SIZE, MPI_INT, neighRank, TAG, MPI_COMM_WORLD);  //buffer,velikost,typ,rank prijemce,tag,komunikacni skupina 
-	    //MPI_Send(&qv[maxIndex]->front(), SIZE, MPI_INT, neighRank, TAG, MPI_COMM_WORLD);  //buffer,velikost,typ,rank prijemce,tag,komunikacni skupina 
-
-	    cout<<"process : "<<myRank<<" result : "<<qv[maxIndex]->front()<<endl;
-		qv[maxIndex]->pop();
-	  }
-	}
+      while ( !qv[0]->empty() && !qv[1]->empty() ) {
+	maxIndex = (qv[0]->front() > qv[1]->front() ? 0 : 1);
+	cout<<"process : "<<myRank<<" result : "<<qv[maxIndex]->front()<<endl;
+	qv[maxIndex]->pop();
+      }
+      MPI_Recv(&queueNumber, SIZE, MPI_INT, myRank-1, TAG, MPI_COMM_WORLD, &stat); 
+      if( queueNumber == -1 ) {
+	maxIndex = (qv[0]->empty() ? 1 : 0);
+	cout<<"process : "<<myRank<<" result : "<<qv[maxIndex]->front()<<endl;
+	//cout<<"process : "<<myRank<<" DONE "<<endl;
+	qv[maxIndex]->pop();
+      }
+      MPI_Recv(&number, SIZE, MPI_INT, myRank-1, TAG, MPI_COMM_WORLD, &stat); 
+      qv[queueNumber]->push(number);
+      //cout<<"process : "<<myRank<<" queue : "<<queueNumber<<" number : "<<number<<endl;
+    }
   }
 
   MPI_Finalize();
