@@ -100,11 +100,11 @@ int runSorter(t_SORTER* s) {
         MPI_Send(&qv[maxIndex]->front(), SIZE, MPI_INT, s->neighRank, TAG, MPI_COMM_WORLD);  
  
         cout<<"process : "<<s->myRank<<" sent : "<<qv[maxIndex]->front()<<endl;
-        MPI_Send(&done, SIZE, MPI_INT, s->neighRank, TAG, MPI_COMM_WORLD);  
         qv[maxIndex]->pop();
       }
+      MPI_Send(&done, SIZE, MPI_INT, s->neighRank, TAG, MPI_COMM_WORLD);  
       cout<<"process : "<<s->myRank<<" DONE "<<endl;
-      break;
+      return 0;
     }
     //buffer,velikost,typ,rank odesilatele,tag, skupina, stat
     MPI_Recv(&number, SIZE, MPI_INT, s->predRank, TAG, MPI_COMM_WORLD, &stat); 
@@ -115,8 +115,8 @@ int runSorter(t_SORTER* s) {
 }
 
 int runLastSorter(t_SORTER* s) {
-  int queueNumber;
-  int number;
+  int queueNumber = 0;
+  int number = 0;
   int maxIndex;
 
   vector< queue<int>* > qv;
@@ -131,17 +131,20 @@ int runLastSorter(t_SORTER* s) {
     }
     MPI_Recv(&queueNumber, SIZE, MPI_INT, s->predRank, TAG, MPI_COMM_WORLD, &stat); 
     if( queueNumber == -1 ) {
+
       maxIndex = (qv[0]->empty() ? 1 : 0);
       while ( !qv[maxIndex]->empty() ) {
         cout<<qv[maxIndex]->front()<<endl;
         qv[maxIndex]->pop();
       }
+      
       cout<<"process : "<<s->myRank<<" DONE "<<endl;
-      break;
+      return 0;
     }
     MPI_Recv(&number, SIZE, MPI_INT, s->predRank, TAG, MPI_COMM_WORLD, &stat); 
     qv[queueNumber]->push(number);
     cout<<"process : "<<s->myRank<<" queue : "<<queueNumber<<" number : "<<number<<endl;
+//    cout<<"process : "<<s->myRank<<" queue : "<<queueNumber<<" pred : "<<s->predRank<<endl;
   }
 }
 
