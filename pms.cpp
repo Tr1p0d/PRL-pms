@@ -51,6 +51,7 @@ int runFirstSorter(t_SORTER* s) {
   cout<<endl<<"process : 0 DONE"<<endl;
   fin.close(); 
   MPI_Send(&done, SIZE, MPI_INT, s->neighRank, TAG, MPI_COMM_WORLD);  
+  return 0;
 }
 
 int runSorter(t_SORTER* s) {
