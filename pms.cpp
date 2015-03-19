@@ -67,13 +67,17 @@ int runSorter(t_SORTER* s) {
   qv.push_back(new queue<int> );
  
   while(1) {
-    while ( !qv[0]->empty() && !qv[1]->empty() ) {
+    if ( !qv[0]->empty() && !qv[1]->empty() ) {
       if( toggleLastNuber(s->base, counter)) {
-        //cout<<"process : "<<s->myRank<<"smaller : "<<qv[0]->front()<<" "<<maxIndex<<" "<<qv[1]->front()<<endl;
+//        cout<<"process : "<<s->myRank<<"smaller : "<<qv[0]->front()<<" "<<maxIndex<<" "<<qv[1]->front()<<endl;
         if ( qv[0]->front() < lastNumber && qv[1]->front() < lastNumber ) {
           maxIndex = (qv[0]->front() > qv[1]->front() ? 0 : 1);
         } else if (qv[0]->front() < lastNumber && qv[1]->front() > lastNumber) {
           maxIndex = 0;
+        } else if (qv[0]->front() > lastNumber && qv[1]->front() > lastNumber) {
+		  cout << "both numbers are bigger than already pushed"<<endl;
+          counter++;
+		  continue;
         } else {
           maxIndex = 1;
         }
@@ -96,10 +100,17 @@ int runSorter(t_SORTER* s) {
     if( queueNumber == -1 ) {
       maxIndex = (qv[0]->empty() ? 1 : 0);
       while ( !qv[maxIndex]->empty() ) {
+        if( toggleLastNuber(s->base, counter)) {
+		  if ( lastNumber < qv[maxIndex]->front() ) {
+            counter++;
+			continue;
+		  }
+		}
         nextQueueNumber = toggleQueue(s->base, counter++);
         MPI_Send(&nextQueueNumber, SIZE, MPI_INT, s->neighRank, TAG, MPI_COMM_WORLD);  
         MPI_Send(&qv[maxIndex]->front(), SIZE, MPI_INT, s->neighRank, TAG, MPI_COMM_WORLD);  
  
+        lastNumber = qv[maxIndex]->front();
         cout<<"process : "<<s->myRank<<" sent : "<<qv[maxIndex]->front()<<endl;
         qv[maxIndex]->pop();
       }
