@@ -65,78 +65,42 @@ int runSorter(t_SORTER* s) {
   vector< queue<int>* > qv;
   qv.push_back(new queue<int> );
   qv.push_back(new queue<int> );
- 
-  while(1) {
-    if ( !qv[0]->empty() && !qv[1]->empty() ) {
-      if( toggleLastNuber(s->base, counter)) {
-//        cout<<"process : "<<s->myRank<<"smaller : "<<qv[0]->front()<<" "<<maxIndex<<" "<<qv[1]->front()<<endl;
-        if ( qv[0]->front() < lastNumber && qv[1]->front() < lastNumber ) {
-          maxIndex = (qv[0]->front() > qv[1]->front() ? 0 : 1);
-        } else if (qv[0]->front() < lastNumber && qv[1]->front() > lastNumber) {
-          maxIndex = 0;
-        } else if (qv[0]->front() > lastNumber && qv[1]->front() > lastNumber) {
-          cout<<"process : "<<s->myRank<<" both numbers are bigger than already pushed"<<endl;
-          counter++;
-		  continue;
-        } else {
-          maxIndex = 1;
-        }
-      } else {
-        maxIndex = (qv[0]->front() > qv[1]->front() ? 0 : 1);
-      }
-      nextQueueNumber = toggleQueue(s->base, counter++);
-      //buffer,velikost,typ,rank prijemce,tag,komunikacni skupina 
-      MPI_Send(&nextQueueNumber, SIZE, MPI_INT, s->neighRank, TAG, MPI_COMM_WORLD);  
-      //buffer,velikost,typ,rank prijemce,tag,komunikacni skupina 
-      MPI_Send(&qv[maxIndex]->front(), SIZE, MPI_INT, s->neighRank, TAG, MPI_COMM_WORLD);  
-      lastNumber = qv[maxIndex]->front();
- 
-      cout<<"process : "<<s->myRank<<" sent : "<<qv[maxIndex]->front()<<endl;
-      qv[maxIndex]->pop();
-    } 
- 
-    //buffer,velikost,typ,rank odesilatele,tag, skupina, stat
-    MPI_Recv(&queueNumber, SIZE, MPI_INT, s->predRank, TAG, MPI_COMM_WORLD, &stat); 
-    if( (queueNumber == -1) && (qv[0]->empty() || qv[1]->empty() )) {
-      priority_queue<int>* pq = new priority_queue<int>;
-      maxIndex = (qv[0]->empty() ? 1 : 0);
-      cout<<"process : "<<s->myRank<<" entering DONE"<<" index is "<<maxIndex<<endl;
-      cout<<"process : "<<s->myRank<<endl;
-      while( !qv[maxIndex]->empty() ) {
-       pq->push(qv[maxIndex]->front());
-       cout<<qv[maxIndex]->front()<<" ";
-       qv[maxIndex]->pop(); 
-      } 
-      cout<<endl;
 
-      while ( !pq->empty() ) {
-        if( toggleLastNuber(s->base, counter)) {
-	  if ( lastNumber < qv[maxIndex]->front() ) {
-            cout<<"serious error"<<endl;
-            exit(1);
-          }
-        } 
-        nextQueueNumber = toggleQueue(s->base, counter++);
-        MPI_Send(&nextQueueNumber, SIZE, MPI_INT, s->neighRank, TAG, MPI_COMM_WORLD);  
-        MPI_Send(&pq->top(), SIZE, MPI_INT, s->neighRank, TAG, MPI_COMM_WORLD);  
- 
-        lastNumber = pq->top();
-        cout<<"process : "<<s->myRank<<" sent : "<<pq->top()<<endl;
-        pq->pop();
-      }
-      MPI_Send(&done, SIZE, MPI_INT, s->neighRank, TAG, MPI_COMM_WORLD);  
-      cout<<"process : "<<s->myRank<<" DONE "<<endl;
-      return 0;
-    } else continue; 
-    
-    cout<<"process : "<<s->myRank<<" reading number "<<endl;
-    //buffer,velikost,typ,rank odesilatele,tag, skupina, stat
+  while(counter < (s->base + 1)) { 
+    MPI_Recv(&queueNumber, SIZE, MPI_INT, s->predRank, TAG, MPI_COMM_WORLD, &stat); 
     MPI_Recv(&number, SIZE, MPI_INT, s->predRank, TAG, MPI_COMM_WORLD, &stat); 
     qv[queueNumber]->push(number);
- 
     cout<<"process : "<<s->myRank<<" queue : "<<queueNumber<<" number : "<<number<<endl;
-  } // while
-}
+    counter++;
+  }
+
+  counter = 0;
+  maxIndex = qv[0]->front() < qv[1]->front() ? 1 : 0; 
+  lastNumber = qv[maxIndex]->front();
+  
+  while(1) {
+    nextQueueNumber = toggleQueue(s->base, counter++);
+    MPI_Send(&nextQueueNumber, SIZE, MPI_INT, s->neighRank, TAG, MPI_COMM_WORLD);  
+    MPI_Send(&qv[maxIndex]->front(), SIZE, MPI_INT, s->neighRank, TAG, MPI_COMM_WORLD);  
+    qv[maxIndex]->pop();
+    cout<<"process : "<<s->myRank<<" sent : "<<qv[maxIndex]->front()<<endl;
+	counter++;
+
+    if ( toggleLastNuber(s->base, counter) ) {
+      if ( !qv[0]->empty() && qv[0]->empty() ) {
+	    if ( qv[0]->front() < lastNumber && qv[0]
+	  }
+    }
+    
+  //buffer,velikost,typ,rank prijemce,tag,komunikacni skupina 
+  MPI_Send(&nextQueueNumber, SIZE, MPI_INT, s->neighRank, TAG, MPI_COMM_WORLD);  
+  //buffer,velikost,typ,rank prijemce,tag,komunikacni skupina 
+  lastNumber = qv[maxIndex]->front();
+ 
+  cout<<"process : "<<s->myRank<<" sent : "<<qv[maxIndex]->front()<<endl;
+
+  } 
+} 
 
 int runLastSorter(t_SORTER* s) {
   int queueNumber = 0;
