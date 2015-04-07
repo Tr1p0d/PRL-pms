@@ -1,0 +1,42 @@
+\documentclass[a4paper, 10pt]{article}[5.10.2011]
+%% packages
+\usepackage[left=2cm, text={17cm, 24cm}, top=3cm]{geometry} % rozmery stránky
+\usepackage[czech]{babel}
+\usepackage[latin2]{inputenc}
+\usepackage[IL2]{fontenc}
+\usepackage{colortbl}
+\usepackage{graphicx}
+\newcommand{\czuv}[1]{\quotedblbase#1\textquotedblleft}
+\definecolor{gray}{rgb}{0.4,0.4,0.4}
+% =======================================================================
+% balíèek "hyperref" vytváøí klikací odkazy v pdf, pokud tedy pou¾ijeme pdflatex
+% problém je, ¾e balíèek hyperref musí být uveden jako poslední, tak¾e nemù¾e
+% být v ¹ablonì
+\usepackage{color}
+\usepackage[unicode,colorlinks,hyperindex,plainpages=false]{hyperref}
+\definecolor{links}{rgb}{0.4,0.5,0}
+\definecolor{anchors}{rgb}{1,0,0}
+\def\AnchorColor{anchors}
+\def\LinkColor{links}
+\def\pdfBorderAttrs{/Border [0 0 0] } % bez okrajù kolem odkazù
+\pdfcompresslevel=9
+
+
+
+
+\title{Paralelní a distribuované algoritmy\,--\,dokumentace \\Pipeline merge sort}
+\author{Marek Kidon}
+\date{\today}
+\begin{document}
+\maketitle
+\noindent Dokumentace k 1.projektu do pøedmìtu Paralelní a distribuované algoritmy (PRL). Obsahuje popis zadání, rozbor a analýzu algoritmu Pipeline merge sort. V závìru dokumentu se nachází komunikaèní protokol mezi \czuv{procesory} (zpùsob zasílání zpráv). Pro vizualizaci je vyu¾it sekvenèní diagram.
+\section{Zadání}
+Pomocí knihovny Open MPI implementujte algoritmus \textbf{Pipeline merge sort}.
+\begin{description}
+\end{description}
+
+
+\normalsize
+\end{document}
+
+
